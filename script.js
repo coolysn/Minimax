@@ -410,12 +410,9 @@ document.addEventListener('keydown', e=>{
   if (!d || !canAct()) return;
   e.preventDefault();
   const ms = movesFor(S).filter(m=>m.dir===d);
-  let m = null;
-  if (selected) m = ms.find(x=>x.from===selected.pos);
-  if (!m && ms.length === 1) m = ms[0];
-  if (m) doMove(m);
-  else if (ms.length > 1){ setStatus('SELECT A CAR FIRST', 'MORE THAN ONE CAR CAN GO THAT WAY'); sfx.bad(); }
-  else sfx.bad();
+  if (!selected){ setStatus('SELECT A CAR FIRST', 'TAP ONE OF YOUR CARS, THEN USE THE ARROW KEYS'); sfx.bad(); return; }
+  const m = ms.find(x=>x.from===selected.pos);   // only the selected car can move
+  if (m) doMove(m); else sfx.bad();
 });
 
 /* buttons */
@@ -426,7 +423,7 @@ $('#hintBtn').addEventListener('click', ()=>{
   selected = carAt(human, m.from);
   refreshHighlights(m);
   sfx.select();
-  setStatus('HINT', 'THE WHITE-OUTLINED CAR AND SQUARE ARE THE BEST MOVE');
+  setStatus('HINT', 'WHITE OUTLINE SHOWS THE BEST MOVE FOR YOU');
 });
 $('#restartBtn').addEventListener('click', newGame);
 $('#menuBtn').addEventListener('click', toMenu);
@@ -461,7 +458,7 @@ function bindGroup(sel, setter){
   }));
 }
 const DIFF_TEXT = {
-  1: 'DRIVER: THE CPU PLAYS THE BEST MOVE ON 7 OUT OF 10 TURNS AND A RANDOM LEGAL MOVE ON 3 OUT OF 10 (30% RANDOM).',
+  1: 'DRIVER: THE CPU PLAYS THE BEST MOVE ON 7 OUT OF 10 TURNS (30% RANDOM).',
   2: 'CHAMP: THE CPU ALWAYS PLAYS THE BEST MOVE (0% RANDOM).'
 };
 function showDiffText(){ $('#diffDesc').textContent = DIFF_TEXT[diff]; }
