@@ -42,60 +42,74 @@ function applyMove(S, m){
 const keyOf = S => S.B.join('') + '|' + S.R.join('') + '|' + S.t;
 
 /* ------------------------------------------------------------------ *
- *  SOLVER – retrograde analysis over the full reachable state graph.
- *  val: 'W' / 'L' for the player to move, with distance; missing = draw.
+ *  AI – MINIMAX (negamax form) with alpha-beta pruning,
+ *  iterative deepening and a transposition table.
+ *
+ *  Scores are from the point of view of the player to move:
+ *    +WIN  = that player wins, -WIN = that player loses.
+ *    A win (or loss) that is one ply further away is worth 1 less (adj),
+ *    so the CPU wins as fast as possible and loses as slowly as possible.
+ *    At the search horizon a simple race heuristic is used (evaluate).
  * ------------------------------------------------------------------ */
-const graph = new Map(), val = new Map();
-(function solve(){
-  const stack = [START(0), START(1)];                       // blue-first and red-first openings
-  stack.forEach(s => graph.set(keyOf(s), { S:s, succ:null }));
-  while (stack.length){
-    const S = stack.pop(), k = keyOf(S), node = graph.get(k);
-    node.succ = [];
-    for (const m of movesFor(S)){
-      const res = applyMove(S, m);
-      if (res.won){ node.succ.push({m, key:null}); continue; }
-      const nk = keyOf(res.state);
-      node.succ.push({m, key:nk});
-      if (!graph.has(nk)){ graph.set(nk, { S:res.state, succ:null }); stack.push(res.state); }
-    }
-  }
-  let round = 0, changed = true;
-  while (changed){
-    round++;
-    const fresh = [];
-    for (const [k,node] of graph){
-      if (val.has(k)) continue;
-      if (node.succ.length === 0){ fresh.push([k,'L']); continue; }   // no legal move = loss
-      let anyL = false, allW = true;
-      for (const s of node.succ){
-        if (s.key === null){ anyL = true; break; }                    // moving last car off = win
-        const v = val.get(s.key);
-        if (v && v.r === 'L'){ anyL = true; break; }
-        if (!(v && v.r === 'W')) allW = false;
-      }
-      if (anyL) fresh.push([k,'W']); else if (allW) fresh.push([k,'L']);
-    }
-    for (const [k,r] of fresh) val.set(k,{r,d:round});
-    changed = fresh.length > 0;
-  }
-})();
+const WIN = 1000;
+const MAX_DEPTH = 40;           // longest forced line in this game is 21 plies
+const FORCED = WIN - 100;       // |score| above this means a forced win/loss was found
+const adj   = v => v > FORCED ? v - 1 : v < -FORCED ? v + 1 : v;   // result is one ply further away
+const unadj = v => v > FORCED ? v + 1 : v < -FORCED ? v - 1 : v;   // inverse, used for alpha-beta windows
 
-function scoreMove(S, m){
-  const res = applyMove(S, m);
-  if (res.won) return 1000;
-  const v = val.get(keyOf(res.state));
-  if (!v) return 0;                            // draw by endless play
-  return v.r === 'L' ? 1000 - v.d : -1000 + v.d;
+// Heuristic at the horizon: how many more squares the opponent needs than I do.
+function evaluate(S){
+  const dist = (list, blue) => list.reduce((a,p)=> a + (blue ? 3 - p%3 : ((p/3)|0) + 1), 0);
+  const b = dist(S.B, true), r = dist(S.R, false);
+  return S.t === 0 ? r - b : b - r;
 }
-function bestMoves(S){
+// Try exits first, then forward moves, then sideways moves (better pruning).
+function orderMoves(S, ms){
+  const fwd = S.t === 0 ? 'E' : 'N';
+  const rank = m => m.to < 0 ? 0 : (m.dir === fwd ? 1 : 2);
+  return ms.slice().sort((a,b)=>rank(a)-rank(b));
+}
+const tt = new Map();           // transposition table: state -> {d:depth, v:value, f:0 exact | 1 lower | 2 upper}
+function negamax(S, depth, alpha, beta){
   const ms = movesFor(S);
-  let best = -Infinity, pick = [];
-  for (const m of ms){
-    const s = scoreMove(S, m);
-    if (s > best){ best = s; pick = [m]; } else if (s === best) pick.push(m);
+  if (ms.length === 0) return -WIN;               // no legal move = the player to move loses
+  if (depth === 0) return evaluate(S);
+  const k = keyOf(S), e = tt.get(k), a0 = alpha;
+  if (e && e.d === depth){
+    if (e.f === 0) return e.v;
+    if (e.f === 1 && e.v >= beta) return e.v;
+    if (e.f === 2 && e.v <= alpha) return e.v;
   }
-  return pick;
+  let best = -Infinity;
+  for (const m of orderMoves(S, ms)){
+    const r = applyMove(S, m);
+    const v = r.won ? WIN : adj(-negamax(r.state, depth-1, -unadj(beta), -unadj(alpha)));
+    if (v > best) best = v;
+    if (best > alpha) alpha = best;
+    if (alpha >= beta) break;                      // alpha-beta cut-off
+  }
+  tt.set(k, { d:depth, v:best, f: best <= a0 ? 2 : best >= beta ? 1 : 0 });
+  return best;
+}
+function scoreRoot(S, depth){
+  return orderMoves(S, movesFor(S)).map(m => {
+    const r = applyMove(S, m);
+    return { m, v: r.won ? WIN : adj(-negamax(r.state, depth-1, -Infinity, Infinity)) };
+  });
+}
+const bestCache = new Map();    // state -> list of equally best moves (also used by HINT)
+function bestMoves(S){
+  const key = keyOf(S);
+  if (bestCache.has(key)) return bestCache.get(key);
+  let res;
+  for (let d = 1; d <= MAX_DEPTH; d++){            // iterative deepening: shortest forced win is found first
+    res = scoreRoot(S, d);
+    if (Math.abs(Math.max(...res.map(x=>x.v))) >= FORCED) break;
+  }
+  const top = Math.max(...res.map(x=>x.v));
+  const picks = res.filter(x=>x.v === top).map(x=>x.m);
+  bestCache.set(key, picks);
+  return picks;
 }
 const rnd = a => a[(Math.random()*a.length)|0];
 function aiChoose(S, level){
@@ -423,7 +437,7 @@ $('#hintBtn').addEventListener('click', ()=>{
   selected = carAt(human, m.from);
   refreshHighlights(m);
   sfx.select();
-  setStatus('HINT', 'WHITE OUTLINE SHOWS THE BEST MOVE FOR YOU');
+  setStatus('HINT', 'THE WHITE-OUTLINED CAR AND SQUARE ARE THE BEST MOVE');
 });
 $('#restartBtn').addEventListener('click', newGame);
 $('#menuBtn').addEventListener('click', toMenu);
@@ -458,7 +472,7 @@ function bindGroup(sel, setter){
   }));
 }
 const DIFF_TEXT = {
-  1: 'DRIVER: THE CPU PLAYS THE BEST MOVE ON 7 OUT OF 10 TURNS (30% RANDOM).',
+  1: 'DRIVER: THE CPU PLAYS THE BEST MOVE ON 7 OUT OF 10 TURNS AND A RANDOM LEGAL MOVE ON 3 OUT OF 10 (30% RANDOM).',
   2: 'CHAMP: THE CPU ALWAYS PLAYS THE BEST MOVE (0% RANDOM).'
 };
 function showDiffText(){ $('#diffDesc').textContent = DIFF_TEXT[diff]; }
