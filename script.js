@@ -249,7 +249,9 @@ function refreshHighlights(hintMove){
   }
   if (selected){
     selected.el.classList.add('sel');
-    ms.filter(m=>m.from===selected.pos).forEach(m=>{
+    let sm = ms.filter(m=>m.from===selected.pos);
+    if (hintMove && hintMove.from===selected.pos) sm = sm.filter(m=>m.to===hintMove.to);   // hint: show only the best move
+    sm.forEach(m=>{
       const el = targetEl(m);
       el.classList.add('target'); el.dataset.arrow = ARROW[m.dir];
       if (hintMove && hintMove.from===m.from && hintMove.to===m.to) el.classList.add('hintt');
@@ -378,6 +380,7 @@ function onCarClick(car){
     setStatus('THAT CAR IS BLOCKED', 'PICK ANOTHER CAR');
     return;
   }
+  if (selected === car) hintOn = false;   // deselecting the hinted car turns the hint off
   selected = (selected === car) ? null : car;
   sfx.select();
   refreshHighlights(hintOn ? bestMoves(S)[0] : null);
@@ -385,11 +388,14 @@ function onCarClick(car){
 }
 function onSquare(i){
   if (!canAct() || !selected) return;
+  if (!cellEls[i].classList.contains('target')) return;   // only highlighted squares can be chosen
   const m = movesFor(S).find(m=>m.from===selected.pos && m.to===i);
   if (m) doMove(m);
 }
 function onExit(owner, idx){
   if (!canAct() || !selected || owner !== human) return;
+  const exitEl = owner === 0 ? rightExit[idx] : topExit[idx];
+  if (!exitEl.classList.contains('target')) return;   // only highlighted exits can be chosen
   const m = movesFor(S).find(m=>m.from===selected.pos && m.to===-1);
   if (!m) return;
   // make sure they clicked the exit that matches the car's row/col
@@ -428,7 +434,11 @@ $('#sndBtn').addEventListener('click', e=>{
   sound = !sound; e.currentTarget.textContent = sound ? 'SOUND ON' : 'SOUND OFF';
   if (sound) sfx.select();
 });
-function openRules(){ $('#rules').classList.remove('hidden'); $('#rulesClose').focus(); }
+function openRules(){
+  $('#rules').classList.remove('hidden');
+  $('#rulesClose').focus({ preventScroll:true });
+  $('#rules .box').scrollTop = 0;
+}
 function closeRules(){ $('#rules').classList.add('hidden'); }
 $('#rulesBtn').addEventListener('click', openRules);
 $('#rulesBtn2').addEventListener('click', openRules);
