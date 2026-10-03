@@ -106,45 +106,67 @@ Viibad on tehtud inglise keeles, tulemused on kirjeldatud eesti keeles.
 - Tehisaru pakkus kaks ettepanekut (nooleklahvid ja vihje, otsetee tagasi toomine). Neid **ei tehtud**.
 
 ---
+### Viip 5 – lahendaja asendamine minimax-algoritmiga
 
+Enne seda esitati kaks eestikeelset küsimust ilma koodimuudatuseta: mida tuleks teha, et CPU kasutaks minimaxi, ja kas praegune lahendus on minimaxist parem. Tehisaru ei muutnud sel ajal midagi.
+
+**Viip:**
+
+> Change the algorithm to a minimax algorithm without changing the existing game logic, rules and layout. List out all the changes and the effects of it.
+
+**Tulemus:**
+- Muudetud on ainult `script.js`. Mängu loogika, reeglid ja paigutus (`index.html`, `style.css`) jäid samaks.
+- Vana lahendaja (tagurpidi analüüs, mis arvutas kõik seisud lehe laadimisel ette) eemaldati.
+- Asemele tuli **minimax negamaxi kujul** järgmiste osadega:
+  - **alfa-beeta lõikamine**;
+  - **iteratiivne süvendamine** (otsib 1, 2, 3… käiku ette ja lõpetab, kui leiab sundvõidu või sundkaotuse, nii et lühim võit leitakse esimesena);
+  - **transpositsioonitabel**, mis jätab meelde juba analüüsitud seisud;
+  - **lihtne hindamisfunktsioon** otsingu piiril (mitu ruutu on vastasel väljumiseni rohkem minust);
+  - **käikude järjestus** (väljumine, siis edasi, siis külgsuunas), et lõikamine töötaks paremini.
+- `bestMoves` ja `aiChoose` jäid samade nimedega, seega CPU käik ja HINT-nupp töötavad endiselt. Parimate käikude tulemus salvestatakse iga seisu jaoks.
+- Raskusastmed jäid samaks: Driver 30 % juhuslikke käike, Champ 0 %.
+- **Mõju:**
+  - CPU valib samad parimad käigud nagu vana lahendaja. Ta võidab nii kiiresti kui võimalik ja kaotab nii aeglaselt kui võimalik.
+  - Lehe laadimisel ei arvutata enam midagi. Otsing tehakse alles siis, kui CPU või HINT vajab käiku.
+  - Otsing on piiratud sügavusega, seega edasi-tagasi külgsuunas sõitmine ei tekita otsingus lõputut tsüklit.
+  - Kolm korda korduva seisu viigi reegel jäi mängu loogikasse. Otsing sellest ei tea.
+  
 ## 5. Ressursikasutus ja tehisaru optimeerimised
 
 ### Mida tehisaru optimeeris
 
-Tehisaru tegi mõned valikud arvutus- ja mäluressursi säästmiseks. Need olid tema enda otsused ja viipades neid ei küsitud.
-
 | Valik | Mõju |
 |---|---|
-| **Lahendaja arvutab kõik ette ühe korra, lehe laadimisel.** Käigu ajal on CPU otsus ainult otsing valmis tabelist. | Mängu ajal puudub otsingu viivitus. Kõik arvutus on lehe laadimisel. |
-| **Läbitakse ainult saavutatavad seisud** algseisust (DFS), mitte kõik võimalikud paigutused. | Seisusid on 1873 (sinine esimesena) või 2608 (kui arvestada ka punase esimese käiguga). |
-| **Kompaktne seisu kuju:** autode asukohad on ruudu numbrid (0–8), järjestatud massiivid, võti on string `B|R|käija`. | Väike mälukasutus ja kiire `Map`-otsing. |
-| **Tagurpidi analüüs (retrograde analysis) voorudena.** Iga voor kasutab ainult eelmiste voorude tulemusi. | Võidu ja kaotuse kaugus (käikude arv) tuleb kaasa, nii et CPU võidab kiiremini ja kaotab aeglasemalt. |
-| **Auto liikumine CSS `transform`-iga** ja `steps()` ajastusega. | Liikumine ei muuda elementide paigutust ja "sammuv" liikumine sobib retrostiiliga. Jõudlust ei mõõdetud. |
-| **Ei kasutata ühtegi teeki ega välist faili.** | Laadimine on kiire, töötab offline. |
-| **`prefers-reduced-motion`:** animatsioonid lülituvad välja, kui seade seda küsib. | Vähem koormust nõrgemal seadmel. |
-| **Mängu id (`gameId`) ja taimerite tühistamine** uue mängu või menüüsse minemise korral. | Vana CPU-käik ei saa uues mängus sekkuda. |
+| **Alfa-beeta lõikamine.** | Jätab vahele harud, mis ei saa tulemust muuta, nii et analüüsitavaid seise on vähem. |
+| **Iteratiivne süvendamine.** | Otsing lõpeb kohe, kui sundvõit või sundkaotus on leitud. Leiab lühima võidu. |
+| **Transpositsioonitabel (`Map`).** | Sama seisu, milleni jõuti eri käikudega, ei analüüsita uuesti. |
+| **Käikude järjestus** (väljumine, edasi, külgsuunas). | Parem lõikamine, vähem seise. |
+| **Võidu ja kaotuse skoor ei sõltu käigu numbrist** (`adj` ja `unadj`). | Tabelit saab kasutada eri harudes ja CPU võidab ikkagi kiiremini ning kaotab aeglasemalt. |
+| **Parimate käikude vahemälu (`bestCache`).** | HINT-i korduv vajutamine ei käivita otsingut uuesti. |
+| **Lehe laadimisel ei arvutata enam midagi.** | Töö tehakse alles käigu ajal, mitte enne mängu algust. |
+| **Kompaktne seisu kuju** (ruudu numbrid, string `B|R|käija`), CSS `transform` ja `steps()`, `prefers-reduced-motion`, `gameId` ja taimerite tühistamine, ei kasutata teeke. | Samad kui varem (viibad 1–2). |
 
 ### Mida mõõdeti ja mida mitte
 
 Mõõdetud (Node'is, tehisaru poolt):
-- Saavutatavaid seisusid on **1873** (sinine esimesena).
-- Mõlemat algseisu arvestades on seisusid **2608**.
-- **Viikseisusid (lõputu mäng) ei leitud ühtegi.**
-- Lahendaja järgi võidab esimesena käija täiusliku mängu korral **19 käiguga**. Kontrolliks mängis lahendaja Node'is iseendaga mõlemast algseisust kuni lõpuni ja jõudis ootuspäraselt võiduni 19 käiguga.
+- Uut minimaxi võrreldi vana lahendajaga kõigis **2600 seisus** (2608 seisust need, kus on vähemalt üks lubatud käik). Parimate käikude hulgad olid **kõigis täpselt samad, erinevusi 0**.
+- Ühe käigu otsing võttis keskmiselt **3,5 ms** ja halvimal juhul **171 ms**. Mängu esimene käik võttis umbes 130–170 ms.
+- Pikim sundliin selles mängus on **21 käiku** (vana lahendaja järgi), sügavuspiir on 40.
+- Champ vs Champ lõppes mõlemast algseisust esimesena käija võiduga **19 käiguga**.
+- Champ vs juhuslik mängija: Champ võitis **400 mängust 400**, mõlema värviga.
+- Transpositsioonitabelis oli pärast esimese käigu otsingut umbes 1300 kirjet.
 
-**Ei mõõdetud:** täpset lahendaja tööaega, mälukasutust brauseris ja liidese jõudlust telefonis. 
+**Ei mõõdetud:** otsingu aega brauseris ja telefonis, mälukasutust brauseris ja seda, kas otsing võib liidese hetkeks külmutada.
 
 ### Piirangud (mida tehisaru ei optimeerinud)
 
-- Lahendaja arvutatakse **iga lehe laadimisel uuesti**, tulemust ei salvestata (nt `localStorage`).
+- Otsing jookseb lehe põhilõimes (pole Web Workerit), nii et nõrgemal seadmel võib liides käigu ajal hetkeks kinni jääda.
 - Iga uus mäng ehitab laua DOM-i otsast peale.
 - Ühtegi profiilimist (nt brauseri *Performance*-tööriist) ei tehtud.
 
 ### Märkus algoritmi kohta
 
-Dodgem on kahe mängijaga nullsummamäng täieliku informatsiooniga, seega on **minimax sellele sobiv meetod**. Siin kasutatud lahendaja ei ole aga kirjutatud minimax-otsinguna. See on **tagurpidi analüüs kogu seisugraafil**, mis annab samad tulemused (iga seis on võit, kaotus või viik käija jaoks), aga töötab teisiti:
-- Tavaline minimax kontrollib käigupuud rekursiivselt etteantud sügavuseni. Dodgemis on aga **tsüklid** (auto saab külgsuunas edasi-tagasi liikuda), nii et puhas minimax peaks sügavust piirama või korduvaid seise käsitlema.
-- Tagurpidi analüüs käsitleb tsükleid loomulikult: seisud, mida ei õnnestu võiduks ega kaotuseks märkida, on viigid.
+CPU kasutab nüüd **minimaxi** (negamaxi kujul). Dodgemis on **tsüklid** (auto saab külgsuunas edasi-tagasi liikuda), seetõttu on otsing piiratud sügavusega ja seisu hinnatakse piiril lihtsa hindamisfunktsiooniga. Varasem tagurpidi analüüs (retrograde analysis) jäi arenduse ajal ainult kontrollmeetodiks: sellega võrreldi, et minimax annab samad vastused.
 
 ---
 
@@ -157,26 +179,30 @@ Dodgem on kahe mängijaga nullsummamäng täieliku informatsiooniga, seega on **
 3. **Viip 2:** Rookie eemaldati, raskusastme kirjeldus lisati, valik "mängija värv" asendati valikuga "kes käib esimesena", failid jaotati kolmeks. Lahendaja laiendati mõlemale algseisule ja kontrolliti uuesti Node'is (2608 seisu, kumbki algseis annab 19 käiguga võidu).
 4. **Viip 3:** reeglite akna kerimine, majareegel eraldi punktiks, vihje näitab ainult parimat käiku.
 5. **Viip 4:** nooleklahvide viga parandatud (ainult valitud auto liigub).
+6. **Viip 5:** vana lahendaja asendati minimaxiga. Tehisaru kontrollis tulemust vana lahendaja vastu kõigis 2600 seisus ja jõudis lõpuks 0 erinevuseni.
 
 ### Õnnestumised
 
 - Reeglid tulid täpselt Berkeley lehelt ja täielik lahendaja annab CPU-le vääramatu Champ-režiimi.
-- Kõik neli viipa täideti etappide kaupa ilma, et varasem töö lagunenuks. Failid jagati kolmeks ilma koodi sisu muutmata.
-- Viibas 4 jättis tehisaru leitud lisavead ja ideed ettepanekuteks ning ootas sinu käsku.
+- Kõik viis viipa täideti etappide kaupa ilma, et varasem töö lagunenuks. Failid jagati kolmeks ilma koodi sisu muutmata.
+- Minimaxi õigsust kontrolliti automaatselt vana lahendaja vastu kõigis mängu seisudes, mitte ainult mõne näite peal.
+- Mängu loogika, reeglid ja paigutus jäid minimaxile üleminekul samaks.
 - Muudatused kirjeldati igal korral nimeliselt ja täpselt.
 
 ### Ebaõnnestumised ja puudujäägid
 
-- **Brauseris ei testitud mitte kordagi.** Tehisaru kontrollis ainult Node'is loogikat ja skripti süntaksit. Liidese õigsus (paigutus telefonis, animatsioonid, klõpsud) on seetõttu kontrollimata.
+- **Minimaxi esimesed variandid olid valed.** Esimene variant, mis kontrollis korduvaid seise otsingu käigus, andis 691 kuni 871 erinevust vana lahendajaga. Teine variant (ilma sellise kontrollita, aga transpositsioonitabeliga) andis ikkagi 6 erinevust. Viga oli selles, et alfa-beeta aken ei arvestanud skoori muutust "üks käik kaugemal". See parandati funktsiooniga `unadj` ja alles siis tuli 0 erinevust.
+- Minimaxi kiirust brauseris ja telefonis ei mõõdetud.
 - **Tehisaru lisas viibas 1 omavolilise reegli** (kolm korda korduv seis = viik), kuigi viip ütles "follow the original game rules". Selle kohta tehtud märge oli küll ausalt esitatud, aga reegel jäi sisse.
 - **Viibas 1 tekkis reeglitekstis segane lause**, mille tehisaru siiski ise parandas.
 - **Nooleklahvide viga (viip 4)** oli olemas juba esimesest versioonist alates ja jäi märkamata kuni sinu teatamiseni. See näitab, et kasutajaliidese sisendit ei olnud testitud.
 - **Viip 3 tegi kaks lisamuudatust**, mida sa ei küsinud. Tehisaru ütles seda ette, aga see oli ikkagi vastu piirangule "do not change anything else".
 - **Viip 3 vihje jättis augu:** nooleklahvidega sai vihje ajal ikkagi teisi käike teha. Tehisaru märkis selle viibas 4 ettepanekuna.
+- Viimase viibaga vahetati kogu algoritmi loogika minimaxi vastu, sest algselt tegi tehisaru teise algoritmiga.
 
 ### Muljed
 
-Tehisaru täitis kitsaid, selgelt piiratud viipasid hästi, eriti kui nõuded olid nummerdatud. Kõige nõrgem oli **kontroll**: ta kirjutas loogika, mida sai Node'is kontrollida, aga liidest ei saanud ta ise proovida. Seetõttu leidis vea hoopis kasutaja. Piiravad märkused ("do not change anything else") töötasid suures osas, aga ettevaatlikkus ei olnud täiuslik. Soovitus tulevaseks: lisa viipadesse selgesõnaline testimise samm või kasuta brauseri automaattesti.
+Tehisaru täitis kitsaid, selgelt piiratud viipasid hästi, eriti kui nõuded olid nummerdatud. Kõige nõrgem oli **kontroll**: ta kirjutas loogika, mida sai Node'is kontrollida, aga liidest ei saanud ta ise proovida. Seetõttu leidis vea hoopis kasutaja. Piiravad märkused ("do not change anything else") töötasid suures osas, aga ettevaatlikkus ei olnud täiuslik. Viibas 5 aitas kõige rohkem see, et vana lahendaja jäi kontrollmeetodiks: see tegi minimaxi vead nähtavaks. Soovitus tulevaseks: lisa viipadesse selgesõnaline testimise samm või kasuta brauseri automaattesti.
 
 ---
 
@@ -190,9 +216,8 @@ Need on tehisaru ettepanekud ja neid **ei ole teostatud**.
 - **"SHOW RULES" otsetee** mängu lõpu ekraanile.
 - **Märge menüüsse:** kui CPU alustab Champ-režiimis, võidab ta täiusliku mängu korral, nii et mängija vajab tema viga.
 - **Brauseritestid:** liidest tuleks kontrollida telefonis ja arvutis ning vajadusel lisada automaattestid.
-- **Lahendaja tulemuse vahemällu panek** (`localStorage`) või lahendaja viimine eraldi veebitöötajasse (Web Worker).
-- **Oma minimax-versioon** (valikuline), vt peatükki 5.
-
+- **Minimaxi viimine Web Workerisse** ja otsingu aja mõõtmine telefonis, et liides ei külmuks.
+  
 ## 8. Kasutatud tehisaru
 
 Claude (Anthropic), tasuta versioon. 
