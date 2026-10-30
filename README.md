@@ -221,3 +221,5 @@ Need on tehisaru ettepanekud ja neid **ei ole teostatud**.
 ## 6. Kasutatud tehisaru
 
 Claude (Anthropic), tasuta versioon. 
+
+## Mäng avatav lehel: https://minimax-dodgem.onrender.com/
