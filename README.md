@@ -20,7 +20,7 @@ A browser version of the classic 3×3 board game Dodg'em, built with plain HTML,
 
 Klassikalise Dodg'emi (Dodgem) 3×3 versioon, mis on tehtud puhta HTML-i, CSS-i ja JavaScriptiga. Mängija juhib alati **siniseid** autosid, vastane on tehisaru (CPU) ja juhib **punaseid** autosid. Liides on 1979. aasta arkaadmasina stiilis (CRT-skaneerimisjooned, pikslikunsti autod, piiksuv heli).
 
-Mäng on loodud tehisaru (Claude, tasuta versioon) abiga neljas etapis (viibas). Selles failis on kirjas iga viiba ülesanne, tulemus, ressursikasutus, tegevuste logi ja muljed.
+Mäng on loodud tehisaru (Claude, tasuta versioon) abiga viies etapis (viibas). Selles failis on kirjas iga viiba ülesanne, tulemus, ressursikasutus, tegevuste logi ja muljed.
 
 ---
 
