@@ -25,7 +25,7 @@ Reeglid pärinevad lehelt <https://gamescrafters.berkeley.edu/games.php?game=dod
 
 ---
 
-## 4. Arendusetapid (viibad)
+## 2. Arendusetapid (viibad)
 
 Viibad on tehtud inglise keeles, tulemused on kirjeldatud eesti keeles.
 
@@ -131,7 +131,7 @@ Enne seda esitati kaks eestikeelset küsimust ilma koodimuudatuseta: mida tuleks
   - Otsing on piiratud sügavusega, seega edasi-tagasi külgsuunas sõitmine ei tekita otsingus lõputut tsüklit.
   - Kolm korda korduva seisu viigi reegel jäi mängu loogikasse. Otsing sellest ei tea.
   
-## 5. Ressursikasutus ja tehisaru optimeerimised
+## 3. Ressursikasutus ja tehisaru optimeerimised
 
 ### Mida tehisaru optimeeris
 
@@ -170,7 +170,7 @@ CPU kasutab nüüd **minimaxi** (negamaxi kujul). Dodgemis on **tsüklid** (auto
 
 ---
 
-## 6. Tegevuste logi ja muljed
+## 4. Tegevuste logi ja muljed
 
 ### Ajajoon
 
@@ -206,7 +206,7 @@ Tehisaru täitis kitsaid, selgelt piiratud viipasid hästi, eriti kui nõuded ol
 
 ---
 
-## 7. Teadaolevad piirangud ja ettepanekud
+## 5. Teadaolevad piirangud ja ettepanekud
 
 Need on tehisaru ettepanekud ja neid **ei ole teostatud**.
 
@@ -218,6 +218,6 @@ Need on tehisaru ettepanekud ja neid **ei ole teostatud**.
 - **Brauseritestid:** liidest tuleks kontrollida telefonis ja arvutis ning vajadusel lisada automaattestid.
 - **Minimaxi viimine Web Workerisse** ja otsingu aja mõõtmine telefonis, et liides ei külmuks.
   
-## 8. Kasutatud tehisaru
+## 6. Kasutatud tehisaru
 
 Claude (Anthropic), tasuta versioon. 
