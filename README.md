@@ -1,3 +1,20 @@
+# DODG'EM – 3×3 retro game against an AI opponent
+
+> 🇬🇧 English summary below · 🇪🇪 Full documentation in Estonian further down
+
+A browser version of the classic 3×3 board game Dodg'em, built with plain HTML, CSS and JavaScript in a 1979 arcade style. The player controls the blue cars, and the computer opponent controls the red ones.
+
+**How it was made:** I built the game with Claude (Anthropic) in five iterative prompts. Each prompt had numbered requirements and restrictions, such as "do not change anything else" and "list every change you made".
+
+**AI opponent:** The computer uses the **minimax algorithm** (negamax form) with alpha-beta pruning, iterative deepening and a transposition table. It has two difficulty levels: *Driver* (30% random moves) and *Champ* (always the best move).
+
+**Verification:** The minimax implementation was checked against a full retrograde solver in all 2,600 playable positions, with 0 differences. In 400 test games, Champ won every game against a random player.
+
+**What went wrong:** The AI added a rule on its own, its first minimax versions gave wrong results, and I found an arrow-key bug through manual testing. All of this is documented in the Estonian sections below: every prompt, its result, the AI's mistakes and how they were fixed.
+
+**Run it:** open `index.html` in a browser. No installation needed.
+
+---
 # DODG'EM – 3×3 retromäng tehisaru vastu
 # Mäng avatav lehel: https://minimax-dodgem.onrender.com/
 
