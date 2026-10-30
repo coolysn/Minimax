@@ -1,4 +1,5 @@
 # DODG'EM – 3×3 retromäng tehisaru vastu
+# Mäng avatav lehel: https://minimax-dodgem.onrender.com/
 
 Klassikalise Dodg'emi (Dodgem) 3×3 versioon, mis on tehtud puhta HTML-i, CSS-i ja JavaScriptiga. Mängija juhib alati **siniseid** autosid, vastane on tehisaru (CPU) ja juhib **punaseid** autosid. Liides on 1979. aasta arkaadmasina stiilis (CRT-skaneerimisjooned, pikslikunsti autod, piiksuv heli).
 
@@ -222,4 +223,3 @@ Need on tehisaru ettepanekud ja neid **ei ole teostatud**.
 
 Claude (Anthropic), tasuta versioon. 
 
-## Mäng avatav lehel: https://minimax-dodgem.onrender.com/
